@@ -3,6 +3,8 @@ service: email-service
 provider:
   name: aws
   runtime: go1.x
+  apiKeys:
+    - ${ssm:API_KEY_TOKEN}
   memorySize: 128
   environment:
     SENDGRID_API_KEY: ${ssm:SENDGRID_API_KEY}
@@ -34,6 +36,22 @@ package:
    - ./bin/**
 
 functions:
+  email_rest_api_index:
+    handler: bin/rest_api_index
+    events:
+      - http:
+          path: mails
+          method: get
+          cors: true
+          private: true
+  email_rest_api_create:
+    handler: bin/rest_api_create
+    events:
+      - http:
+          path: mails
+          method: post
+          cors: true
+          private: true
   email_processing:
     handler: bin/email_processing
     events:
