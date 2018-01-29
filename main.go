@@ -4,6 +4,7 @@ import (
   "context"
   "github.com/aws/aws-lambda-go/events"
   "github.com/aws/aws-lambda-go/lambda"
+  "github.com/rubyist/circuitbreaker"
 )
 
 type Adapter interface {
@@ -23,8 +24,31 @@ func Handler(ctx context.Context, e events.DynamoDBEvent) {
 
 func sendEmail(to, subject, content string) (string, error) {
   var a Adapter = MailgunAdapter{}
-  result, err := a.SendEmail(to, subject, content)
-  return result, err
+
+  cb := circuit.NewThresholdBreaker(3)
+
+  for {
+    if cb.Ready() {
+      result, err := a.SendEmail(to, subject, content)
+
+      if err != nil {
+        cb.Fail()
+        continue
+      }
+      cb.Success()
+      return result, nil
+    } else {
+      a = SendgridAdapter{}
+
+      result, err := a.SendEmail(to, subject, content)
+      if err != nil {
+        return result, err
+      } else {
+        return result, nil
+      }
+    }
+  }
+
 }
 
 func main() {
