@@ -1,19 +1,25 @@
 package main
 
 import (
-	"github.com/aws/aws-lambda-go/lambda"
+  "context"
+  "github.com/aws/aws-lambda-go/events"
+  "github.com/aws/aws-lambda-go/lambda"
 )
 
-type Response struct {
-	Message string `json:"message"`
+type Adapter interface {
+  SendEmail(to, subject, content string) (string, error)
 }
 
-func Handler() (Response, error) {
-	return Response{
-		Message: "Go Serverless v1.0! Your function executed successfully!",
-	}, nil
+func Handler(ctx context.Context, e events.DynamoDBEvent) {
+}
+
+func sendEmail(to, subject, content string) (string, error) {
+  var a Adapter = MailgunAdapter{}
+  result, err := a.SendEmail(to, subject, content)
+
+  return result, err
 }
 
 func main() {
-	lambda.Start(Handler)
+  lambda.Start(Handler)
 }
